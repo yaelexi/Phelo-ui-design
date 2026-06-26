@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phelo — Interactive Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#e9efe9; --board:#dde6dd;
+    --ink:#13201a; --muted:#5f7068; --hair:#d3ddd4;
+    --green:#15663f; --green-2:#1f8a55;
+    --amber:#c9721a; --amber-bg:#fbeeda;
+    --pest:#c5402f; --pest-bg:#fae6e2;
+    --white:#ffffff; --focus:#1f8a55;
+    --disp:"Space Grotesk",sans-serif; --body:"Inter",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--board);color:var(--ink);font-family:var(--body);
+    -webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;padding:28px 16px;gap:14px}
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:8px}
+
+  .brandline{display:inline-flex;align-items:center;gap:9px}
+  .brandline svg{width:22px;height:22px}
+  .brandline h1{font-family:var(--disp);font-size:22px;font-weight:700;letter-spacing:-.02em}
+  .tagline{font-size:12px;color:var(--muted)}
+
+  .phone{width:min(380px,100%);height:min(760px,calc(100vh - 110px));background:var(--white);
+    border-radius:42px;box-shadow:0 24px 50px -18px rgba(19,32,26,.45),0 0 0 1px rgba(19,32,26,.06);padding:10px}
+  .screen{width:100%;height:100%;border-radius:32px;overflow:hidden;position:relative;
+    background:var(--paper);display:flex;flex-direction:column}
+  .status{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:11px;font-weight:600;flex:none}
+  .status .dots{display:flex;gap:3px}.status .dots i{width:4px;height:4px;border-radius:50%;background:var(--ink);opacity:.5}
+
+  #views{flex:1;position:relative;overflow:hidden}
+  .view{position:absolute;inset:0;display:none;flex-direction:column}
+  .view.active{display:flex}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 18px 12px;flex:none}
+  .topbar .ttl{font-family:var(--disp);font-weight:600;font-size:17px;padding-left:4px}
+  .iconbtn{width:44px;height:44px;border-radius:50%;background:var(--white);border:1px solid var(--hair);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink)}
+  .iconbtn svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.7}
+
+  .body{flex:1;overflow-y:auto;padding:0 22px;display:flex;flex-direction:column}
+
+  .nav{height:64px;flex:none;background:var(--white);border-top:1px solid var(--hair);display:flex;align-items:stretch}
+  .nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    color:var(--muted);font-size:10px;font-weight:500;background:none;border:none;cursor:pointer;min-height:44px;font-family:var(--body)}
+  .nav button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7}
+  .nav button[aria-current="page"]{color:var(--green)}
+
+  .eyebrow{font-family:var(--disp);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .h2{font-family:var(--disp);font-size:22px;font-weight:600;letter-spacing:-.01em;line-height:1.15}
+  .lede{font-size:13px;color:var(--muted);line-height:1.55;margin-top:8px}
+  .card{background:var(--white);border:1px solid var(--hair);border-radius:18px;padding:16px}
+
+  .chip{font-family:var(--disp);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;display:inline-block}
+  .chip.clear{background:#e3f1e7;color:var(--green)}
+  .chip.treated{background:var(--amber-bg);color:var(--amber)}
+  .chip.cancel{background:#eceee9;color:var(--muted)}
+  .chip.pest{background:var(--pest-bg);color:var(--pest)}
+
+  .dial-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .dial{width:200px;height:200px;border-radius:50%;position:relative;cursor:pointer;border:none;background:none;display:flex;align-items:center;justify-content:center;padding:0}
+  .dial .ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--hair)}
+  .dial .ring.r2{inset:16px;border-color:#cfe0d4}
+  .dial .ring.r3{inset:32px;border-style:dashed;border-color:#bcd4c2}
+  .dial .core{width:126px;height:126px;border-radius:50%;background:var(--green);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#eafff2;box-shadow:0 14px 30px -10px rgba(21,102,63,.6)}
+  .dial .core .lab{font-family:var(--disp);font-weight:700;font-size:20px}
+  .dial .core .sub{font-size:10px;opacity:.85;margin-top:2px}
+  .sweep{position:absolute;inset:6px;border-radius:50%;background:conic-gradient(from 0deg,rgba(31,138,85,0) 0deg,rgba(31,138,85,.4) 60deg,rgba(31,138,85,0) 90deg)}
+  @media (prefers-reduced-motion:no-preference){.sweep{animation:spin 3.4s linear infinite}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .map{position:relative;height:176px;border-radius:16px;overflow:hidden;border:1px solid var(--hair);margin-top:14px}
+  .map .a{position:absolute;inset:0 50% 0 0;background:#dfeaf6}
+  .map .b{position:absolute;inset:0 0 0 50%;background:#e1efe4}
+  .map .lab{position:absolute;top:10px;font-family:var(--disp);font-weight:600;font-size:11px}
+  .map .lab.la{left:12px;color:#3a4a55}.map .lab.lb{right:12px;color:#3a5547}
+  .map .path{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(21,102,63,.18)}
+  @media (prefers-reduced-motion:no-preference){.map .path{animation:fly 5s ease-in-out infinite alternate}}
+  @keyframes fly{0%{left:24%;top:26%}25%{left:24%;top:74%}50%{left:50%;top:30%}75%{left:74%;top:72%}100%{left:74%;top:28%}}
+
+  .statline{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .stat{display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--hair);border-radius:20px;padding:6px 11px;font-size:11px;font-weight:500}
+  .stat b{width:6px;height:6px;border-radius:50%;background:var(--green-2)}
+  .progress{margin-top:16px}
+  .progress .pl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px}
+  .progress .pl b{font-family:var(--disp);color:var(--green)}
+  .bar{height:8px;border-radius:8px;background:#d7e3da;overflow:hidden}
+  .bar i{display:block;height:100%;width:0%;border-radius:8px;background:var(--green-2);transition:width .15s linear}
+
+  .count{display:flex;flex-direction:column;align-items:center;margin:6px 0 4px}
+  .count .ring2{width:146px;height:146px;position:relative;display:flex;align-items:center;justify-content:center}
+  .count svg{transform:rotate(-90deg)}
+  .count .t{position:absolute;text-align:center}
+  .count .t .big{font-family:var(--disp);font-size:28px;font-weight:700;color:var(--pest)}
+  .count .t .sm{font-size:10px;color:var(--muted);margin-top:1px}
+  .alertbar{display:flex;align-items:center;gap:10px;background:var(--pest-bg);border:1px solid #f0cfc9;border-radius:14px;padding:11px 13px;margin-bottom:14px}
+  .alertbar svg{width:22px;height:22px;stroke:var(--pest);fill:none;flex:none;stroke-width:1.8}
+  .alertbar b{font-family:var(--disp);font-weight:600;color:var(--pest);display:block;font-size:13px}
+  .alertbar small{font-size:11px;color:var(--ink);line-height:1.4}
+
+  .btn{display:block;width:100%;text-align:center;font-family:var(--disp);font-weight:600;font-size:14px;padding:14px;border-radius:14px;border:1.5px solid var(--green);cursor:pointer;background:none;color:var(--ink);min-height:48px}
+  .btn.primary{background:var(--green);color:#eafff2;border-color:var(--green)}
+  .btn.ghost{border-color:var(--hair);margin-top:10px}
+  .btn:disabled{opacity:.5;cursor:default}
+
+  .clearwrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .resicon{width:92px;height:92px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:12px;background:#e3f1e7}
+  .resicon svg{width:44px;height:44px;fill:none;stroke-width:2.4;stroke:var(--green)}
+
+  .scrolltitle{font-family:var(--disp);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 6px}
+  .hitem{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--hair)}
+  .hitem:last-child{border-bottom:none}
+  .hicon{width:38px;height:38px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center}
+  .hicon svg{width:18px;height:18px;fill:none;stroke-width:2}
+  .hicon.clear{background:#e3f1e7}.hicon.clear svg{stroke:var(--green)}
+  .hicon.treated{background:var(--amber-bg)}.hicon.treated svg{stroke:var(--amber)}
+  .hicon.cancel{background:#eceee9}.hicon.cancel svg{stroke:var(--muted)}
+  .hitem .meta{flex:1}.hitem .meta .d{font-family:var(--disp);font-weight:600;font-size:13px}
+  .hitem .meta .s{font-size:11px;color:var(--muted);margin-top:1px}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:30px 0}
+
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--hair)}
+  .setrow:last-child{border-bottom:none}
+  .setrow .lbl{font-size:13px;font-weight:500}
+  .setrow .lbl small{display:block;font-weight:400;color:var(--muted);font-size:11px;margin-top:2px}
+  .setrow .val{font-family:var(--disp);font-size:13px;font-weight:600;color:var(--green)}
+  .stepper{display:flex;align-items:center;gap:8px}
+  .stepper button{width:32px;height:32px;border-radius:9px;border:1px solid var(--hair);background:var(--white);font-size:18px;cursor:pointer;color:var(--ink);line-height:1}
+  .stepper span{font-family:var(--disp);font-weight:600;font-size:13px;min-width:54px;text-align:center}
+  .switch{width:46px;height:27px;border-radius:20px;border:none;background:#cdd6cf;position:relative;cursor:pointer;flex:none}
+  .switch[aria-checked="true"]{background:var(--green-2)}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:transform .15s}
+  .switch[aria-checked="true"]::after{transform:translateX(19px)}
+  .toast{position:absolute;left:50%;bottom:84px;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;
+    font-size:12px;padding:9px 16px;border-radius:20px;opacity:0;pointer-events:none;transition:.25s;white-space:nowrap;z-index:5}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+  <div class="brandline">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 3c2.5 3 4 5.5 4 8a4 4 0 1 1-8 0c0-2.5 1.5-5 4-8z" stroke="#15663f" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 21v-6" stroke="#15663f" stroke-width="1.6" stroke-linecap="round"/></svg>
+    <h1>Phelo</h1>
+  </div>
+  <div class="tagline">Interactive prototype — tap Launch to run a monitoring cycle</div>
+
+  <div class="phone"><div class="screen">
+    <div class="status"><span id="clock">6:42</span><span class="dots"><i></i><i></i><i></i></span></div>
+
+    <div id="views">
+      <!-- HOME -->
+      <section class="view active" id="v-home">
+        <div class="topbar"><div class="ttl">North field</div>
+          <button class="iconbtn" aria-label="Open settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.6c.07-.33.1-.66.1-1z"/></svg></button>
+        </div>
+        <div class="body">
+          <div class="dial-wrap">
+            <button class="dial" aria-label="Launch monitoring" onclick="startScan()">
+              <span class="sweep"></span><span class="ring"></span><span class="ring r2"></span><span class="ring r3"></span>
+              <span class="core"><span class="lab">Launch</span><span class="sub">start monitoring</span></span>
+            </button>
+            <div class="lede" style="text-align:center;max-width:210px">Phelo flies Area A &amp; B and sends results when the scan is done.</div>
+          </div>
+          <div class="card" style="margin-bottom:14px">
+            <div class="eyebrow" style="margin-bottom:8px">Last scan</div>
+            <div id="lastScan" style="display:flex;align-items:center;gap:10px"><span class="chip clear">All clear</span><span style="font-size:12px;color:var(--muted)">Areas A &amp; B · no pests</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MONITORING -->
+      <section class="view" id="v-monitor">
+        <div class="topbar"><div class="ttl">Monitoring</div><span class="chip clear">In progress</span></div>
+        <div class="body">
+          <div class="eyebrow">Flight in progress</div>
+          <div class="h2">Inspecting your field</div>
+          <div class="map"><div class="a"></div><div class="b"></div><div class="lab la">Area A</div><div class="lab lb">Area B</div><div class="path"></div></div>
+          <div class="statline"><span class="stat"><b></b>Drone connected</span><span class="stat"><b></b>Camera streaming</span><span class="stat"><b></b>On flight path</span></div>
+          <div class="progress"><div class="pl"><span id="scanArea">Scanning Area A</span><b id="scanPct">0%</b></div><div class="bar"><i id="scanBar"></i></div></div>
+          <div class="lede">You'll get a notification when results are ready.</div>
+        </div>
+      </section>
+
+      <!-- PEST ALERT -->
+      <section class="view" id="v-pest">
+        <div class="topbar"><div class="ttl">Pest alert</div><span class="chip pest">Action needed</span></div>
+        <div class="body">
+          <div class="alertbar"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+            <div><b id="pestTitle">Pests detected in Area A</b><small id="pestSub">Area B is clear — only Area A will be treated.</small></div></div>
+          <div class="count"><div class="ring2">
+            <svg width="146" height="146" viewBox="0 0 146 146"><circle cx="73" cy="73" r="64" fill="none" stroke="#f0cfc9" stroke-width="9"/>
+              <circle id="cdarc" cx="73" cy="73" r="64" fill="none" stroke="#c5402f" stroke-width="9" stroke-linecap="round"/></svg>
+            <div class="t"><div class="big" id="cdtime">5:00</div><div class="sm">until auto-spray</div></div></div></div>
+          <div class="lede" style="text-align:center;margin:0 4px 16px" id="pestNote">If you don't cancel, Phelo sprays pesticide on Area A only.</div>
+          <button class="btn primary" id="cancelBtn" onclick="cancelSpray()">Cancel spray</button>
+          <button class="btn ghost" id="sprayNow" onclick="sprayNow()">Spray Area A now</button>
+        </div>
+      </section>
+
+      <!-- RESULT (clear / treated / cancelled) -->
+      <section class="view" id="v-result">
+        <div class="topbar"><div class="ttl">Results</div><span class="chip clear" id="resChip">Complete</span></div>
+        <div class="body"><div class="clearwrap">
+          <div class="resicon" id="resIcon"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>
+          <div class="eyebrow">Cycle complete</div>
+          <div class="h2" id="resTitle">No pests detected</div>
+          <div class="lede" id="resLede" style="max-width:240px">Areas A and B were inspected and no infestation was found.</div>
+          <div class="card" style="width:100%;margin-top:18px;text-align:left">
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:var(--muted)">Area A</span><span id="resA" class="chip clear">Clear</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span style="color:var(--muted)">Area B</span><span id="resB" class="chip clear">Clear</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--muted)"><span>Saved to history</span><span id="resTime">—</span></div>
+          </div>
+          <button class="btn primary" style="margin-top:18px" onclick="go('home')">Done</button>
+        </div></div>
+      </section>
+
+      <!-- HISTORY -->
+      <section class="view" id="v-history">
+        <div class="topbar"><div class="ttl">Monitoring history</div></div>
+        <div class="body"><div class="card" id="histList" style="padding:4px 16px;margin-top:6px"></div></div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" id="v-settings">
+        <div class="topbar"><div class="ttl">Settings</div></div>
+        <div class="body">
+          <div class="scrolltitle">Spraying</div>
+          <div class="card" style="padding:2px 16px">
+            <div class="setrow"><span class="lbl">Cancel window<small>Time to cancel before auto-spray</small></span>
+              <div class="stepper"><button aria-label="Decrease cancel window" onclick="stepCancel(-1)">−</button><span id="setCancel">5 min</span><button aria-label="Increase cancel window" onclick="stepCancel(1)">+</button></div></div>
+            <div class="setrow"><span class="lbl">Auto-spray on detection<small>Spray automatically if not cancelled</small></span>
+              <button class="switch" role="switch" aria-checked="true" aria-label="Auto-spray on detection" onclick="toggleSwitch(this,'autoSpray')"></button></div>
+            <div class="setrow"><span class="lbl">Spray duration<small>How long each pump runs</small></span>
+              <div class="stepper"><button aria-label="Decrease spray duration" onclick="stepDur(-5)">−</button><span id="setDur">10 s</span><button aria-label="Increase spray duration" onclick="stepDur(5)">+</button></div></div>
+          </div>
+          <div class="scrolltitle">Field</div>
+          <div class="card" style="padding:2px 16px">
+            <div class="setrow"><span class="lbl">Area A name</span><span class="val">Area A</span></div>
+            <div class="setrow"><span class="lbl">Area B name</span><span class="val">Area B</span></div>
+          </div>
+          <div class="scrolltitle">Notifications</div>
+          <div class="card" style="padding:2px 16px">
+            <div class="setrow"><span class="lbl">Push notifications<small>Alerts when results are ready</small></span>
+              <button class="switch" role="switch" aria-checked="true" aria-label="Push notifications" onclick="toggleSwitch(this,'push')"></button></div>
+          </div>
+          <div class="scrolltitle">Device</div>
+          <div class="card" style="padding:2px 16px;margin-bottom:10px">
+            <div class="setrow"><span class="lbl">Drone Wi-Fi<small>ESP32-CAM connection</small></span><span class="val">Phelo-CAM</span></div>
+            <div class="setrow"><span class="lbl">Sprinkler controller<small>Central ESP32</small></span><span class="chip clear">Online</span></div>
+            <div class="setrow"><span class="lbl">App version</span><span class="val" style="color:var(--muted)">1.0</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <nav class="nav" aria-label="Main">
+      <button id="nav-home" aria-current="page" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button id="nav-history" onclick="go('history')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>History</button>
+      <button id="nav-settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 12a7 7 0 0 0 0-1l1.6-1.2-2-3.4-1.9.8a7 7 0 0 0-.8-.5l-.3-2H10.9l-.3 2a7 7 0 0 0-.9.5l-1.9-.8-2 3.4L7.4 11a7 7 0 0 0 0 2l-1.6 1.2 2 3.4 1.9-.8.9.5.3 2h3.1l.3-2 .8-.5 1.9.8 2-3.4z"/></svg>Settings</button>
+    </nav>
+
+    <div class="toast" id="toast"></div>
+  </div></div>
+
+<script>
+  // ---------- state ----------
+  const settings = { cancelMin:5, sprayDur:10, autoSpray:true, push:true };
+  let history = [
+    {status:'treated', area:'Area B', time:'Jun 22 · 6:20 AM', detail:'Pests detected · auto-sprayed'},
+    {status:'clear',   area:'',       time:'Yesterday · 6:00 AM', detail:'Areas A & B · no pests found'},
+    {status:'cancel',  area:'Area B', time:'Yesterday · 5:30 PM', detail:'cancelled by you'},
+  ];
+  let scanTimer=null, cdTimer=null, detectedArea='A';
+
+  // ---------- clock ----------
+  function fmtNow(){const d=new Date();let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+String(m).padStart(2,'0')+' '+ap;}
+  function setClock(){const d=new Date();let h=d.getHours(),m=d.getMinutes();h=h%12||12;document.getElementById('clock').textContent=h+':'+String(m).padStart(2,'0');}
+  setClock();setInterval(setClock,15000);
+
+  // ---------- navigation ----------
+  const homeFlow = ['home','monitor','pest','result'];
+  function go(name){
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('v-'+name).classList.add('active');
+    const tab = homeFlow.includes(name)?'home':name;
+    ['home','history','settings'].forEach(t=>{
+      document.getElementById('nav-'+t).setAttribute('aria-current', t===tab?'page':'false');
+    });
+    if(name==='history') renderHistory();
+    document.querySelectorAll('.body').forEach(b=>b.scrollTop=0);
+    if(name!=='pest'){ clearInterval(cdTimer); }
+  }
+
+  function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+    clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2200);}
+
+  // ---------- scan flow ----------
+  function startScan(){
+    go('monitor');
+    const bar=document.getElementById('scanBar'),pct=document.getElementById('scanPct'),area=document.getElementById('scanArea');
+    let p=0; bar.style.width='0%'; pct.textContent='0%'; area.textContent='Scanning Area A';
+    clearInterval(scanTimer);
+    scanTimer=setInterval(()=>{
+      p+=Math.random()*7+3;
+      if(p>=100){p=100;clearInterval(scanTimer);bar.style.width='100%';pct.textContent='100%';setTimeout(finishScan,500);}
+      else{bar.style.width=p+'%';pct.textContent=Math.floor(p)+'%';area.textContent= p<50?'Scanning Area A':'Scanning Area B';}
+    },180);
+  }
+
+  function finishScan(){
+    const pest = Math.random()<0.5;
+    if(pest){ detectedArea = Math.random()<0.5?'A':'B'; setupPest(); go('pest'); startCountdown(); }
+    else { addHistory('clear',''); showResult('clear'); }
+    if(settings.push) toast(pest?'Push: pests detected':'Push: all clear');
+  }
+
+  // ---------- pest + countdown ----------
+  function setupPest(){
+    const other = detectedArea==='A'?'B':'A';
+    document.getElementById('pestTitle').textContent='Pests detected in Area '+detectedArea;
+    document.getElementById('pestSub').textContent='Area '+other+' is clear — only Area '+detectedArea+' will be treated.';
+    document.getElementById('pestNote').textContent='If you don\u2019t cancel, Phelo sprays pesticide on Area '+detectedArea+' only.';
+    const sn=document.getElementById('sprayNow');sn.textContent='Spray Area '+detectedArea+' now';sn.disabled=false;
+    const cb=document.getElementById('cancelBtn');cb.textContent='Cancel spray';cb.disabled=false;
+  }
+
+  function startCountdown(){
+    const total = settings.cancelMin*60; let secs = total;
+    const R=64, C=2*Math.PI*R;
+    const arc=document.getElementById('cdarc'), tEl=document.getElementById('cdtime');
+    arc.setAttribute('stroke','#c5402f'); arc.style.fontSize='';
+    arc.setAttribute('stroke-dasharray',C);
+    clearInterval(cdTimer);
+    function paint(){const m=Math.floor(secs/60),s=secs%60;tEl.textContent=m+':'+String(s).padStart(2,'0');
+      tEl.style.fontSize='';tEl.style.color='var(--pest)';arc.setAttribute('stroke-dashoffset',C*(1-secs/total));}
+    paint();
+    cdTimer=setInterval(()=>{secs--; if(secs<=0){clearInterval(cdTimer);autoSpray();}else paint();},1000);
+  }
+
+  function autoSpray(){ if(settings.autoSpray){ doSpray('auto'); } else { cancelSpray(true); } }
+  function sprayNow(){ clearInterval(cdTimer); doSpray('manual'); }
+  function doSpray(kind){
+    document.getElementById('sprayNow').disabled=true;document.getElementById('cancelBtn').disabled=true;
+    addHistory('treated','Area '+detectedArea);
+    showResult('treated');
+    toast(kind==='auto'?'Auto-spray started · Area '+detectedArea:'Spraying Area '+detectedArea);
+  }
+  function cancelSpray(silent){
+    clearInterval(cdTimer);
+    addHistory('cancel','Area '+detectedArea);
+    showResult('cancel');
+    if(!silent) toast('Spray cancelled · logged');
+  }
+
+  // ---------- result screen ----------
+  function showResult(type){
+    const chip=document.getElementById('resChip'),icon=document.getElementById('resIcon'),
+      title=document.getElementById('resTitle'),lede=document.getElementById('resLede'),
+      rA=document.getElementById('resA'),rB=document.getElementById('resB'),time=document.getElementById('resTime');
+    time.textContent=fmtNow();
+    const det=detectedArea, other=det==='A'?'B':'A';
+    if(type==='clear'){
+      chip.className='chip clear';chip.textContent='Complete';
+      icon.className='resicon';icon.style.background='#e3f1e7';icon.innerHTML='<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>';
+      title.textContent='No pests detected';
+      lede.textContent='Areas A and B were inspected and no infestation was found. No spraying needed.';
+      rA.className='chip clear';rA.textContent='Clear';rB.className='chip clear';rB.textContent='Clear';
+    } else if(type==='treated'){
+      chip.className='chip treated';chip.textContent='Treated';
+      icon.className='resicon';icon.style.background='var(--amber-bg)';icon.innerHTML='<svg viewBox="0 0 24 24" style="stroke:var(--amber)"><path d="M12 3c2.5 3 4 5.5 4 8a4 4 0 1 1-8 0c0-2.5 1.5-5 4-8z"/></svg>';
+      title.textContent='Area '+det+' treated';
+      lede.textContent='Pesticide was applied to Area '+det+' for '+settings.sprayDur+' seconds. Area '+other+' was left untreated.';
+      const aEl=det==='A'?rA:rB, oEl=det==='A'?rB:rA;
+      aEl.className='chip treated';aEl.textContent='Treated';oEl.className='chip clear';oEl.textContent='Clear';
+    } else { // cancel
+      chip.className='chip cancel';chip.textContent='Cancelled';
+      icon.className='resicon';icon.style.background='#eceee9';icon.innerHTML='<svg viewBox="0 0 24 24" style="stroke:var(--muted)"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+      title.textContent='Spray cancelled';
+      lede.textContent='You cancelled spraying for Area '+det+'. No pesticide was applied.';
+      const aEl=det==='A'?rA:rB, oEl=det==='A'?rB:rA;
+      aEl.className='chip cancel';aEl.textContent='Skipped';oEl.className='chip clear';oEl.textContent='Clear';
+    }
+    updateLastScan(type);
+    go('result');
+  }
+
+  function updateLastScan(type){
+    const el=document.getElementById('lastScan');
+    if(type==='clear') el.innerHTML='<span class="chip clear">All clear</span><span style="font-size:12px;color:var(--muted)">Areas A &amp; B · no pests</span>';
+    else if(type==='treated') el.innerHTML='<span class="chip treated">Treated</span><span style="font-size:12px;color:var(--muted)">Area '+detectedArea+' · auto-sprayed</span>';
+    else el.innerHTML='<span class="chip cancel">Cancelled</span><span style="font-size:12px;color:var(--muted)">Area '+detectedArea+' · skipped</span>';
+  }
+
+  // ---------- history ----------
+  function addHistory(status,area){
+    let detail = status==='clear'?'Areas A & B · no pests found'
+      : status==='treated'?'Pests detected · auto-sprayed'
+      : 'cancelled by you';
+    history.unshift({status,area,time:'Today · '+fmtNow(),detail});
+  }
+  function renderHistory(){
+    const wrap=document.getElementById('histList');
+    if(!history.length){wrap.innerHTML='<div class="empty">No cycles yet. Tap Launch on Home to run one.</div>';return;}
+    const icons={
+      clear:'<svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>',
+      treated:'<svg viewBox="0 0 24 24"><path d="M12 3c2.5 3 4 5.5 4 8a4 4 0 1 1-8 0c0-2.5 1.5-5 4-8z"/></svg>',
+      cancel:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>'};
+    const label={clear:'All clear',treated:(a)=>a+' treated',cancel:'Spray cancelled'};
+    wrap.innerHTML = history.map(h=>{
+      const title = h.status==='treated'? (h.area+' treated') : h.status==='cancel'? 'Spray cancelled' : 'All clear';
+      const sub = h.status==='cancel'? (h.area+' · cancelled by you') : h.detail;
+      return '<div class="hitem"><div class="hicon '+h.status+'">'+icons[h.status]+'</div>'+
+        '<div class="meta"><div class="d">'+h.time+' · '+title+'</div><div class="s">'+sub+'</div></div></div>';
+    }).join('');
+  }
+
+  // ---------- settings ----------
+  function stepCancel(d){settings.cancelMin=Math.max(1,Math.min(10,settings.cancelMin+d));document.getElementById('setCancel').textContent=settings.cancelMin+' min';}
+  function stepDur(d){settings.sprayDur=Math.max(5,Math.min(30,settings.sprayDur+d));document.getElementById('setDur').textContent=settings.sprayDur+' s';}
+  function toggleSwitch(el,key){const on=el.getAttribute('aria-checked')!=='true';el.setAttribute('aria-checked',on);settings[key]=on;}
+
+  renderHistory();
+</script>
+</body>
+</html>
+
+
